@@ -1,5 +1,6 @@
 import tensorflow as tf
 import keras
+import os
 from tensorflow.examples.tutorials.mnist import input_data
 
 # ----- Insert that snippet to run distributed jobs -----
