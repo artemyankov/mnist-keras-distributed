@@ -6,6 +6,13 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 from clusterone import get_data_path, get_logs_path
 
+# Specifying paths when working locally
+# For convenience we use a clusterone wrapper (get_data_path below) to be able
+# to switch from local to clusterone without cahnging the code.
+
+PATH_TO_LOCAL_LOGS = os.path.expanduser('~/Documents/mnist/logs')
+ROOT_PATH_TO_LOCAL_DATA = os.path.expanduser('~/Documents/data/')
+
 # Configure  distributed task
 try:
   job_name = os.environ['JOB_NAME']
@@ -33,19 +40,19 @@ flags.DEFINE_string("worker_hosts", worker_hosts,
                     "Comma-separated list of hostname:port pairs")
 
 # Training related flags
-# flags.DEFINE_string("data_dir",
-#                     get_data_path(
-#                         dataset_name = "malo/mnist", #all mounted repo
-#                         local_root = ROOT_PATH_TO_LOCAL_DATA,
-#                         local_repo = "mnist",
-#                         path = 'data'
-#                         ),
-#                     "Path to store logs and checkpoints. It is recommended"
-#                     "to use get_logs_path() to define your logs directory."
-#                     "so that you can switch from local to clusterone without"
-#                     "changing your code."
-#                     "If you set your logs directory manually make sure"
-#                     "to use /logs/ when running on ClusterOne cloud.")
+flags.DEFINE_string("data_dir",
+                    get_data_path(
+                        dataset_name = "malo/mnist", #all mounted repo
+                        local_root = ROOT_PATH_TO_LOCAL_DATA,
+                        local_repo = "mnist",
+                        path = 'data'
+                        ),
+                    "Path to store logs and checkpoints. It is recommended"
+                    "to use get_logs_path() to define your logs directory."
+                    "so that you can switch from local to clusterone without"
+                    "changing your code."
+                    "If you set your logs directory manually make sure"
+                    "to use /logs/ when running on ClusterOne cloud.")
 flags.DEFINE_string("log_dir",
                     get_logs_path('/Users/artem/Documents/Scratch/mnist_keras_distributed/logs/'),
                     "Path to dataset. It is recommended to use get_data_path()"
@@ -98,9 +105,9 @@ def main(_):
     #
     # Data
     #
-    mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
+   # mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
+    mnist = tf.contrib.learn.datasets.mnist.read_data_sets(train_dir=FLAGS.data_dir, one_hot=True)
 
-    tf.reset_default_graph()
     device, target = device_and_target()  # getting node environment
     with tf.device(device):
         # set Keras learning phase to train
