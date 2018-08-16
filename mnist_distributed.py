@@ -1,14 +1,6 @@
 import tensorflow as tf
-from tensorflow.examples.tutorials.mnist import input_data
-from keras.metrics import categorical_accuracy as accuracy
 import keras
-
-
-#
-# Data
-#
-
-mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
+from tensorflow.examples.tutorials.mnist import input_data
 
 # ----- Insert that snippet to run distributed jobs -----
 
@@ -102,18 +94,23 @@ def device_and_target():
 
 
 def main(_):
+
+    #
+    # Data
+    #
+    mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
+
     tf.reset_default_graph()
     device, target = device_and_target()  # getting node environment
-
     with tf.device(device):
-        global_step = tf.train.get_or_create_global_step()
-
         # set Keras learning phase to train
         keras.backend.set_learning_phase(1)
         # do not initialize variables on the fly
         keras.backend.manual_variable_initialization(True)
 
-        # Build Keras model
+        #
+        # Keras model
+        #
         model_inp = keras.layers.Input(shape=(784,))
         x = keras.layers.Dense(128, activation='relu')(model_inp)
         x = keras.layers.Dense(128, activation='relu')(x)
@@ -124,12 +121,14 @@ def main(_):
         predictions = model.output
         # placeholder for training targets
         targets = tf.placeholder(tf.float32, shape=(None, 10))
-        # our categorical crossentropy loss
+        # categorical crossentropy loss
         loss = tf.reduce_mean(
             keras.losses.categorical_crossentropy(targets, predictions)
         )
         # accuracy
-        acc_value = tf.reduce_mean(accuracy(targets, predictions))
+        acc_value = tf.reduce_mean(keras.metrics.categorical_accuracy(targets, predictions))
+        # global step
+        global_step = tf.train.get_or_create_global_step()
 
         # Only if you have regularizers, not in this example
         total_loss = loss * 1.0  # Copy
@@ -151,9 +150,6 @@ def main(_):
 
         with tf.control_dependencies([grad_updates]):
             train_op = tf.identity(total_loss, name="train")
-
-
-
 
     #
     # Train
@@ -180,15 +176,7 @@ def main(_):
                 }
             )
 
-            # val_loss = sess.run(
-            #     total_loss,
-            #     feed_dict={
-            #         model.inputs[0]: mnist.test.images,
-            #         targets: mnist.test.labels
-            #     }
-            # )
-
-            print ('{0}: Accuracy: {1}'.format(i, val_acc))
+            print('Batch Number: {0}, Validation Accuracy: {1}'.format(i, val_acc))
 
 
 if __name__ == '__main__':
