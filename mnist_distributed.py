@@ -1,7 +1,27 @@
+"""
+Example of how to train a basic Keras model on MNIST on the ClusterOne platform.
+
+This example leverages the work of fchollet and vpj:
+https://gist.github.com/fchollet/2c9b029f505d94e6b8cd7f8a5e244a4e
+https://gist.github.com/vpj/e03c32819641dd65e0e70e563a56be42
+"""
 import tensorflow as tf
 import keras
 import os
-from tensorflow.examples.tutorials.mnist import input_data
+from argparse import ArgumentParser
+
+#
+# Command line arguments
+#
+parser = ArgumentParser()
+parser.add_argument('--local_data_dir', type=str, default='data/',
+                        help='Path to local data directory')
+parser.add_argument('--local_log_dir', type=str, default='logs/',
+                        help='Path to local log directory')
+parser.add_argument('--batch_size', type=int, default=128,
+                        help='Batch size')
+args = parser.parse_args()
+
 
 # ----- Insert that snippet to run distributed jobs -----
 
@@ -11,8 +31,10 @@ from clusterone import get_data_path, get_logs_path
 # For convenience we use a clusterone wrapper (get_data_path below) to be able
 # to switch from local to clusterone without cahnging the code.
 
-PATH_TO_LOCAL_LOGS = os.path.expanduser('~/Documents/mnist/logs')
-ROOT_PATH_TO_LOCAL_DATA = os.path.expanduser('~/Documents/data/')
+#PATH_TO_LOCAL_LOGS = args.local_log_dir
+PATH_TO_LOCAL_LOGS = os.path.expanduser('~/Documents/Scratch/mnist_keras_distributed/logs')
+#ROOT_PATH_TO_LOCAL_DATA = args.local_data_dir
+ROOT_PATH_TO_LOCAL_DATA = os.path.expanduser('~/Documents/Scratch/mnist_keras_distributed/MNIST_data')
 
 # Configure  distributed task
 try:
@@ -55,7 +77,7 @@ flags.DEFINE_string("data_dir",
                     "If you set your logs directory manually make sure"
                     "to use /logs/ when running on ClusterOne cloud.")
 flags.DEFINE_string("log_dir",
-                    get_logs_path('/Users/artem/Documents/Scratch/mnist_keras_distributed/logs/'),
+                    ROOT_PATH_TO_LOCAL_DATA,
                     "Path to dataset. It is recommended to use get_data_path()"
                     "to define your data directory.so that you can switch "
                     "from local to clusterone without changing your code."
@@ -100,13 +122,10 @@ def device_and_target():
 
 # --- end of snippet ----
 
-
 def main(_):
-
     #
     # Data
     #
-   # mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
     mnist = tf.contrib.learn.datasets.mnist.read_data_sets(train_dir=FLAGS.data_dir, one_hot=True)
 
     device, target = device_and_target()  # getting node environment
@@ -162,10 +181,11 @@ def main(_):
     #
     # Train
     #
-    with tf.train.MonitoredTrainingSession(master=target, is_chief=(FLAGS.task_index == 0), checkpoint_dir=FLAGS.log_dir) as sess:
-        # writer.add_graph(sess.graph)
-        for i in range(2000):
-            batch_x, batch_y = mnist.train.next_batch(128)
+    with tf.train.MonitoredTrainingSession(
+            master=target, is_chief=(FLAGS.task_index == 0), checkpoint_dir=FLAGS.log_dir) as sess:
+
+        for i in range(1000):
+            batch_x, batch_y = mnist.train.next_batch(args.batch_size)
 
             # perform the operations we defined earlier on batch
             loss_value = sess.run(
@@ -184,7 +204,7 @@ def main(_):
                 }
             )
 
-            print('Batch Number: {0}, Validation Accuracy: {1}'.format(i, val_acc))
+            print('Batch Number: {0:4d}, Task: {1:3d}, Validation Accuracy: {2:6.4f}'.format(i, FLAGS.task_index, val_acc))
 
 
 if __name__ == '__main__':
